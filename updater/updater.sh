@@ -21,27 +21,32 @@ echo "Set Check State URI as [$check_state_uri]"
 sed -i "s|^.*check_state_uri.*|\"check_state_uri\":\"$check_state_uri\",|g" updater/settings.json
 
 echo "Set Application context as [$app_context]"
-sed -i "s|^.*app_context.*|\"app_context\":\"$app_context\",|g" updater/settings.json
+sed -i "s|^.*app_context.*|\"app_context\":\"$app_context\"|g" updater/settings.json
 
 #show full reponse
 printf "\nParameters: \n\n"
 cat updater/settings.json
 
 
-curl -v -F "jps=<updater/zdt.yaml" \
-     -F "envName=$jelastic_envName" \
-     -F "settings=<updater/settings.json" \
-     -F "token=$jelastic_token" \
-        "$jelastic_url/JElastic/marketplace/jps/rest/install" \
+
+case "$jelastic_url" in
+*/)
+    echo "Already has slash"
+    ;;
+*)
+    echo "Adding slash"
+    jelastic_url="$jelastic_url/"
+    ;;
+esac
+
+curl -v --data-urlencode jps@updater/zdt.yaml \
+     -d "envName=$jelastic_envName" \
+     --data-urlencode settings@updater/settings.json \
+     -d "session=$jelastic_token" \
+        "${jelastic_url}JElastic/marketplace/jps/rest/install" \
         > updater/result.json
 
 printf "\nResponse: \n\n"
 cat updater/result.json
 #get result from JSON
-res=$(cat updater/result.json | grep 'result')
-#return bad result in case of error from API
-if [[ "$res" -ne "0" ]]; then
-    exit 255;
-fi
-
-exit 0;
+cat updater/result.json | grep '"result":0'
