@@ -1,0 +1,106 @@
+type: update
+name: ZDT Deploy
+version: 1.7
+
+
+#UI settings
+settings:
+  fields:
+    - name: tc_access_token
+      caption: TeamCity Access TOken
+      type: string
+      cls: string
+      required: true
+      default:
+    - name: tc_artifact_url
+      caption: TeamCity Artifact URL
+      type: string
+      cls: string
+      required: true
+      default:
+    - name: check_state_uri
+      caption: Application check state URI
+      type: string
+      cls: string
+      required: true
+      default:
+    - name: app_context
+      caption: Application context
+      type: string
+      cls: string
+      required: true
+      default: ROOT
+
+
+onInstall:
+  - forEach(item:nodes.cp): #cp layer will be redeployed
+      - redeployNode:
+          id: ${@item.id}
+          backendAddress: ${@item.address}
+
+
+actions:
+   redeployNode:
+      #remove from balancer
+      - removeBackend:
+          address: ${this.backendAddress}
+      #wait current connections
+      - waitConnections:
+          id: ${this.id}
+      #redeploy
+      - deployWar:
+          id: ${this.id}
+          warUrl: ${settings.tc_artifact_url}
+          token: ${settings.tc_access_token}
+      #check state
+      - waitRun:
+          id: ${this.id}
+          path: ${settings.check_state_uri}
+      #add to balancer
+      - addBackend:
+          address: ${this.backendAddress}
+
+   deployWar:
+     #stop server
+     -  stopService:
+          id: ${this.id}
+      #clean webapps folder
+     - cleanApp:
+          id: ${this.id}
+    #downlaod war file
+     - downloadApp:
+         id: ${this.id}
+     #sttart server
+     -  startService:
+          id: ${this.id}
+
+
+   downloadApp:
+     - cmd[${this.id}]: 'curl --header "Authorization: Bearer ${settings.tc_access_token}" ${settings.tc_artifact_url} > /opt/tomcat/webapps/${settings.app_context}.war'
+       user: root
+
+   cleanApp:
+     - cmd[${this.id}]: cp /opt/tomcat/webapps/${settings.app_context}.war /tmp; rm -rf /opt/tomcat/webapps/${settings.app_context}; rm -rf /opt/tomcat/webapps/${settings.app_context}.war
+       user: root
+
+   stopService:
+     - cmd [${this.id}]: /etc/init.d/tomcat stop
+       user: root
+
+   startService:
+     - cmd [${this.id}]: /etc/init.d/tomcat restart
+       user: root
+
+   removeBackend:
+     - cmd[bl]: jem balancer removeCommonHost -h '${this.address}'; jem balancer rebuildCommon --timeout 43170
+       user: root
+
+   addBackend:
+     - cmd[bl]: jem balancer addCommonHost -h '${this.address}'; jem balancer rebuildCommon --timeout 43170
+       user: root
+
+   waitConnections:
+     - cmd [${this.id}]: nscd -i hosts; curl --silent ftp://ftp.jelastic.com/pub/tools/test.sh > /tmp/test.sh  && chmod +x /tmp/test.sh &&  /tmp/test.sh --command check_connenctions
+
+   waitRun:
+     - cmd [${this.id}]: nscd -i hosts; curl --silent ftp://ftp.jelastic.com/pub/tools/test.sh > /tmp/test.sh  && chmod +x /tmp/test.sh &&  /tmp/test.sh --command  check_run --url "${this.path}"

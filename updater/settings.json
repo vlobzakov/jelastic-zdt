@@ -1,0 +1,6 @@
+{
+    "tc_access_token": "token",
+    "tc_artifact_url": "url",
+    "check_state_uri": "status",
+    "app_context": "ROOT"
+}
