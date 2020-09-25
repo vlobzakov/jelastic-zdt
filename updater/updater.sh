@@ -43,7 +43,7 @@ curl --data-urlencode jps@updater/zdt.yaml \
      --data-urlencode settings@updater/settings.json \
      -d "session=$jelastic_token" \
         "${jelastic_url}JElastic/marketplace/jps/rest/install" \
-        | python -mjson.tool > updater/result.json
+        2>&1 | python -mjson.tool > updater/result.json
 
 printf "\nResponse: \n\n"
 cat updater/result.json
