@@ -27,8 +27,7 @@ sed -i "s|^.*app_context.*|\"app_context\":\"$app_context\"|g" updater/settings.
 printf "\nParameters: \n\n"
 cat updater/settings.json
 
-
-
+#add slash if not exists
 case "$jelastic_url" in
 */)
     echo "Already has slash"
@@ -39,12 +38,12 @@ case "$jelastic_url" in
     ;;
 esac
 
-curl -v --data-urlencode jps@updater/zdt.yaml \
+curl --data-urlencode jps@updater/zdt.yaml \
      -d "envName=$jelastic_envName" \
      --data-urlencode settings@updater/settings.json \
      -d "session=$jelastic_token" \
         "${jelastic_url}JElastic/marketplace/jps/rest/install" \
-        > updater/result.json
+        | python -mjson.tool > updater/result.json
 
 printf "\nResponse: \n\n"
 cat updater/result.json
