@@ -28,7 +28,7 @@ printf "\nParameters: \n\n"
 cat updater/settings.json
 
 
-curl -F "jps=<updater/zdt.yaml" \
+curl -v -F "jps=<updater/zdt.yaml" \
      -F "envName=$jelastic_envName" \
      -F "settings=<updater/settings.json" \
      -F "token=$jelastic_token" \
@@ -38,10 +38,7 @@ curl -F "jps=<updater/zdt.yaml" \
 printf "\nResponse: \n\n"
 cat updater/result.json
 #get result from JSON
-res=$(cat updater/result.json | jq -r '.response.response.result')
-if [[ -z "$res" ]]; then
-    res=$(cat result.json | jq -r '.response.result')
-fi
+res=$(cat updater/result.json | grep 'result')
 #return bad result in case of error from API
 if [[ "$res" -ne "0" ]]; then
     exit 255;
