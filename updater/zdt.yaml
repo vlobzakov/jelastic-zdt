@@ -76,7 +76,7 @@ actions:
 
 
    downloadApp:
-     - cmd[${this.id}]: 'curl --header "Authorization: Bearer ${settings.tc_access_token}" ${settings.tc_artifact_url} > /opt/tomcat/webapps/${settings.app_context}.war'
+     - cmd[${this.id}]: 'curl ${settings.tc_artifact_url} > /opt/tomcat/webapps/${settings.app_context}.war'
        user: root
 
    cleanApp:
